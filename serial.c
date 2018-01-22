@@ -4,7 +4,7 @@
 #include <sys/time.h>
 
 #define MATRIXOUTPUT 1
-#define nSIZE 64
+#define MATRIXSIZE 64
 
 // Matrix multiplication function
 void mat_mul(float *a, float *b, float *c, int n) {
@@ -42,8 +42,8 @@ int main()
   // Variables
   int i, j, k;
 
-  // Length of vectors
-  int n = nSIZE;
+  // Length of matrix and rows/cols
+  int n = MATRIXSIZE;
   int sqrtN = sqrt(n);
 
   // Host input vectors
@@ -83,15 +83,15 @@ int main()
   // Start the timing
   printf(">>> Starting calculation\n");
   gettimeofday(&Tvalue, &dummy);
-  float starttime = (float)Tvalue.tv_sec + 1.0e-6*((float)Tvalue.tv_usec);
+  double starttime = (double)Tvalue.tv_sec + 1.0e-6*((double)Tvalue.tv_usec);
 
   // Calculation
   mat_mul(h_a, h_b, h_c, n);
 
   // End the timed loop
   gettimeofday(&Tvalue, &dummy);
-  float endtime = (float)Tvalue.tv_sec + 1.0e-6*((float)Tvalue.tv_usec);
-  float runtime = (endtime - starttime);
+  double endtime = (double)Tvalue.tv_sec + 1.0e-6*((double)Tvalue.tv_usec);
+  double runtime = (endtime - starttime);
   printf(">>> Done: took %.5lf seconds runtime\n", runtime);
 
   if (MATRIXOUTPUT == 1) {
