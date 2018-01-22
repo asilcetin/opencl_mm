@@ -5,7 +5,8 @@
 #include <CL/opencl.h>
 
 #define MATRIXOUTPUT 1
-#define nSIZE 64
+#define MATRIXSIZE 64
+#define LOCALSIZE 8
 
 #define MAX_SOURCE_SIZE (0x100000)
 
@@ -18,8 +19,8 @@ int main( int argc, char* argv[] )
     struct timeval Tvalue;
     struct timezone dummy;
 
-    // Length of vectors
-    unsigned int n = nSIZE;
+    // Length of matrix and rows/cols
+    unsigned int n = MATRIXSIZE;
     unsigned int sqrtN = sqrt(n);
 
     // Host input vectors
@@ -74,7 +75,7 @@ int main( int argc, char* argv[] )
     cl_int err;
 
     // Number of work items in each local work group
-    localSize = 2;
+    localSize = LOCALSIZE;
 
     // Number of total work items - localSize must be devisor
     globalSize = ceil(n/(float)localSize)*localSize;
@@ -132,16 +133,16 @@ int main( int argc, char* argv[] )
     err |= clEnqueueWriteBuffer(queue, d_b, CL_TRUE, 0,
                                    bytes, h_b, 0, NULL, NULL);
 
+    // Start the timing
+    printf(">>> Starting calculation\n");
+    gettimeofday(&Tvalue, &dummy);
+    double starttime = (double)Tvalue.tv_sec + 1.0e-6*((double)Tvalue.tv_usec);
+
     // Set the arguments to our compute kernel
     err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_a);
     err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_b);
     err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &d_c);
     err |= clSetKernelArg(kernel, 3, sizeof(unsigned int), &n);
-
-    // Start the timing
-    printf(">>> Starting calculation\n");
-    gettimeofday(&Tvalue, &dummy);
-    float starttime = (float)Tvalue.tv_sec + 1.0e-6*((float)Tvalue.tv_usec);
 
     // Execute the kernel over the entire range of the data set  
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &globalSize, &localSize,
@@ -164,8 +165,8 @@ int main( int argc, char* argv[] )
 
     // End the timed loop
     gettimeofday(&Tvalue, &dummy);
-    float endtime = (float)Tvalue.tv_sec + 1.0e-6*((float)Tvalue.tv_usec);
-    float runtime = (endtime - starttime);
+    double endtime = (double)Tvalue.tv_sec + 1.0e-6*((double)Tvalue.tv_usec);
+    double runtime = (endtime - starttime);
     printf(">>> Done: took %.5lf seconds runtime\n", runtime);
 
     // release OpenCL resources
