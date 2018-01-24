@@ -4,10 +4,13 @@
 #include <sys/time.h>
 #include <CL/opencl.h>
 
-#define MATRIXOUTPUT 0
+#define MATRIX_OUTPUT 0
+#define DEBUG_RESULT_OUTPUT 1
+#define DEBUG_I 5834
+#define DEBUG_J 2499
 #define MATRIX_DIM_N 8192
-#define LOCALSIZE 32
-#define GLOBALSIZE 8192
+#define LOCAL_SIZE 32
+#define GLOBAL_SIZE 8192
 #define ITERATION 20
 #define SELECTED_PLATFORM_INDEX 0
 #define SELECTED_DEVICE_INDEX 0
@@ -66,7 +69,7 @@ int main( int argc, char* argv[] )
         h_b[i] = ((float)rand())/RAND_MAX;
     }
 
-    if (MATRIXOUTPUT == 1) {
+    if (MATRIX_OUTPUT == 1) {
       // Print result
 		for( i = 0 ; i < n ; i++ ) {
 			for( j = 0 ; j < n ; j++ ) {
@@ -82,17 +85,35 @@ int main( int argc, char* argv[] )
 			printf("\n");
 		}
     }
+	
+	if(DEBUG_RESULT_OUTPUT){
+		printf("Debug A[%d;%d] - A[%d;%d]:\n",DEBUG_I, DEBUG_J+1, DEBUG_I, DEBUG_I+10);
+		i = DEBUG_I;
+		for( j = DEBUG_J + 1 ; j < DEBUG_J + 11 ; j++ ) {
+			printf("sqrt(%.4f)+", h_a[i*n+j]); 
+		}
+		printf("0\n\n");
+	}
+	
+	if(DEBUG_RESULT_OUTPUT){
+		printf("Debug B[%d;%d]:\n",DEBUG_I, DEBUG_J);
+		i = DEBUG_I;
+		j = DEBUG_J;
+		printf("%.4f ", h_b[i*n+j]); 
+		
+		printf("\n\n");
+	}
 
     cl_int err;
 
     // Number of work items in each local work group
-	size_t local_size[2]  = {LOCALSIZE, LOCALSIZE};
+	size_t local_size[2]  = {LOCAL_SIZE, LOCAL_SIZE};
 
-    // Number of total work items - localSize must be devisor
-	size_t global_size[2] = {GLOBALSIZE, GLOBALSIZE};
+    // Number of total work items - local size must be devisor
+	size_t global_size[2] = {GLOBAL_SIZE, GLOBAL_SIZE};
 
-    printf(">>> Global size: %d\n", GLOBALSIZE);
-    printf(">>> Local size: %d\n", LOCALSIZE);
+    printf(">>> Global size: %d\n", GLOBAL_SIZE);
+    printf(">>> Local size: %d\n", LOCAL_SIZE);
 
     // Load the kernel source code into the array source_str
     FILE *fp;
@@ -193,7 +214,7 @@ int main( int argc, char* argv[] )
     // End the timed loop
     gettimeofday(&Tvalue, &dummy);
 	
-	if (MATRIXOUTPUT == 1) {
+	if (MATRIX_OUTPUT == 1) {
       // Print result
       for( i = 0 ; i < n ; i++ ) {
 		for( j = 0 ; j < n ; j++ ) {
@@ -202,6 +223,15 @@ int main( int argc, char* argv[] )
 		printf("\n");
 		}
     }
+	
+	if(DEBUG_RESULT_OUTPUT){
+		printf("Debug C[%d;%d]:\n",DEBUG_I, DEBUG_J);
+		i = DEBUG_I;
+		j = DEBUG_J;
+		printf("%.2f ", h_c[i*n+j]); 
+		
+		printf("\n\n");
+	}
 	
     double endtime = (double)Tvalue.tv_sec + 1.0e-6*((double)Tvalue.tv_usec);
     double runtime = (endtime - starttime);
