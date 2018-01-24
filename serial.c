@@ -5,29 +5,24 @@
 
 #define MATRIXOUTPUT 1
 #define MATRIXSIZE 64
+#define ITERATION 1
 
-// Matrix multiplication function
-void mat_mul(float *a, float *b, float *c, int n) {
-  int id, k;
-  //printf("n: %d\n", n);
 
-  for (id=0; id<n; id++){
-    //Get our col and row
-    int sqrtN = sqrt(n);
-    int row = floor(id/sqrtN);
-    int col = id%sqrtN;
-
-    //printf("id: %d\n", id);
-    //printf("row: %d\n", row);
-    //printf("col: %d\n", col);
-
-    for (k=0; k<sqrtN; k++){
-      c[id] += a[row*sqrtN+k] * b[k*sqrtN+col];
-      //printf("c_id: %d\n", id);
-      //printf("c_val: %.2f\n", c[id]);
-    }
+// Matrix computation
+void mat_comp(float *a, float *b, float *c, int n) {
+	
+  int i,j,t;
+  float sum;
+  
+  for( i = 0; i < n; i++ ){
+	  for( j = 0; j < n; j++ ){
+		  sum = 0.0f;
+		  for( t = j+1; t < j+11 && t < n; t++ ){
+			  sum += sqrt(a[i*n+t]);
+		  }
+		  c[i*n+j] += b[i*n + j] * sum;
+	  }
   }
-
 }
 
 int main()
@@ -81,13 +76,15 @@ int main()
   }
 
   // Start the timing
-  printf(">>> Starting calculation\n");
+  printf(">>> Starting calculation for %d iteration(s)\n", ITERATION);
   gettimeofday(&Tvalue, &dummy);
   double starttime = (double)Tvalue.tv_sec + 1.0e-6*((double)Tvalue.tv_usec);
 
-  // Calculation
-  mat_mul(h_a, h_b, h_c, n);
-
+  for( i = 0; i < ITERATION; i++ ){
+	// Calculation
+	mat_comp(h_a, h_b, h_c, sqrtN);
+  }
+  
   // End the timed loop
   gettimeofday(&Tvalue, &dummy);
   double endtime = (double)Tvalue.tv_sec + 1.0e-6*((double)Tvalue.tv_usec);
