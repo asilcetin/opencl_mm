@@ -4,11 +4,11 @@
 #include <sys/time.h>
 #include <CL/opencl.h>
 
-#define MATRIXOUTPUT 1
-#define MATRIX_DIM_N 8
-#define LOCALSIZE 8
-#define GLOBALSIZE 64
-#define ITERATION 2
+#define MATRIXOUTPUT 0
+#define MATRIX_DIM_N 8192
+#define LOCALSIZE 32
+#define GLOBALSIZE 8192
+#define ITERATION 20
 #define SELECTED_PLATFORM_INDEX 0
 #define SELECTED_DEVICE_INDEX 0
 
@@ -59,6 +59,7 @@ int main( int argc, char* argv[] )
 
     // Initialize vectors on host
     int i;
+	int j;
     for( i = 0; i < matrix_length; i++ )
     {
         h_a[i] = ((float)rand())/RAND_MAX;
@@ -67,15 +68,19 @@ int main( int argc, char* argv[] )
 
     if (MATRIXOUTPUT == 1) {
       // Print result
-      for ( i = 0 ; i < matrix_length ; i++ ) {
-          printf("%.2f ", h_a[i]);
-          if ((i+1)%n == 0) { printf("\n"); }
-      }
-      printf("\n");
-      for ( i = 0 ; i < matrix_length ; i++ ) {
-          printf("%.2f ", h_b[i]);
-          if ((i+1)%n == 0) { printf("\n"); }
-      }
+		for( i = 0 ; i < n ; i++ ) {
+			for( j = 0 ; j < n ; j++ ) {
+				printf("%.2f ", h_a[i*n+j]); 
+			}
+			printf("\n");
+		}
+		printf("\n");
+		for( i = 0 ; i < n ; i++ ) {
+			for( j = 0 ; j < n ; j++ ) {
+				printf("%.2f ", h_b[i*n+j]); 
+			}
+			printf("\n");
+		}
     }
 
     cl_int err;
@@ -158,17 +163,20 @@ int main( int argc, char* argv[] )
 	gettimeofday(&Tvalue, &dummy);
     double starttime = (double)Tvalue.tv_sec + 1.0e-6*((double)Tvalue.tv_usec);
 
+	unsigned int iter = ITERATION;
+	
     // Set the arguments to our compute kernel
     err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_a);
     err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_b);
     err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &d_c);
     err |= clSetKernelArg(kernel, 3, sizeof(unsigned int), &n);
+    err |= clSetKernelArg(kernel, 4, sizeof(unsigned int), &iter);
 
     // Execute the kernel over the entire range of the data set  
-	for(i = 0; i < ITERATION; i++){
-		err = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, global_size, local_size,
+	
+	err = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, global_size, local_size,
                                                               0, NULL, NULL);
-	}
+	
     
 	if(err != CL_SUCCESS){
 		printf("Error at clEnqueueNDRangeKernel(), error code: %d\n", err);
@@ -187,10 +195,12 @@ int main( int argc, char* argv[] )
 	
 	if (MATRIXOUTPUT == 1) {
       // Print result
-      for ( i = 0 ; i < matrix_length ; i++ ) {
-          printf("%.2f ", h_c[i]);
-          if ((i+1)%n == 0) { printf("\n"); }
-      }
+      for( i = 0 ; i < n ; i++ ) {
+		for( j = 0 ; j < n ; j++ ) {
+			printf("%.2f ", h_c[i*n+j]); 
+		}
+		printf("\n");
+		}
     }
 	
     double endtime = (double)Tvalue.tv_sec + 1.0e-6*((double)Tvalue.tv_usec);
