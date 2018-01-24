@@ -3,16 +3,15 @@
 #include <math.h>
 #include <sys/time.h>
 
-#define MATRIXOUTPUT 1
-#define MATRIXSIZE 64
-#define ITERATION 1
+#define MATRIXOUTPUT 0
+#define MATRIXSIZE 8192*8192
+#define ITERATION 20
 
-
-// Matrix computation
-void mat_comp(float *a, float *b, float *c, int n) {
+// Sequential matrix computation
+void mat_comp_seq(float *a, float *b, float *c, int n, int iteration) {
 	
   int i,j,t;
-  float sum;
+  float sum = 0.0f;
   
   for( i = 0; i < n; i++ ){
 	  for( j = 0; j < n; j++ ){
@@ -20,7 +19,7 @@ void mat_comp(float *a, float *b, float *c, int n) {
 		  for( t = j+1; t < j+11 && t < n; t++ ){
 			  sum += sqrt(a[i*n+t]);
 		  }
-		  c[i*n+j] += b[i*n + j] * sum;
+		  c[i*n+j] = b[i*n + j] * sum * iteration;
 	  }
   }
 }
@@ -80,10 +79,8 @@ int main()
   gettimeofday(&Tvalue, &dummy);
   double starttime = (double)Tvalue.tv_sec + 1.0e-6*((double)Tvalue.tv_usec);
 
-  for( i = 0; i < ITERATION; i++ ){
-	// Calculation
-	mat_comp(h_a, h_b, h_c, sqrtN);
-  }
+  // Calculation
+  mat_comp_seq(h_a, h_b, h_c, sqrtN, ITERATION);
   
   // End the timed loop
   gettimeofday(&Tvalue, &dummy);

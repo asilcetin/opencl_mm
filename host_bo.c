@@ -5,12 +5,12 @@
 #include <CL/opencl.h>
 
 #define MATRIX_OUTPUT 0
-#define DEBUG_RESULT_OUTPUT 0
-#define DEBUG_I 5834
-#define DEBUG_J 2499
+#define DEBUG_RESULT_OUTPUT 1
+#define DEBUG_I 8190
+#define DEBUG_J 8188
 #define COMPARE_TO_SEQUENTIAL 0
 #define MATRIX_DIM_N 8192
-#define LOCAL_SIZE 16
+#define LOCAL_SIZE 8
 #define GLOBAL_SIZE 8192
 #define ITERATION 20
 #define SELECTED_PLATFORM_INDEX 0
@@ -165,7 +165,8 @@ int main(int argc, char * argv[]) {
         (const char * * ) & source_str, NULL, & err);
 
     // Build the program executable 
-    clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+	const char* options = "-cl-no-signed-zeros -cl-unsafe-math-optimizations -cl-finite-math-only -cl-fast-relaxed-math";
+    clBuildProgram(program, 0, NULL, options, NULL, NULL);
 
     // Create the compute kernel in the program we wish to run
     kernel = clCreateKernel(program, "mat_comp", & err);

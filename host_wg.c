@@ -14,7 +14,7 @@
 #define GLOBAL_SIZE 8192
 #define ITERATION 20
 #define SELECTED_PLATFORM_INDEX 0
-#define SELECTED_DEVICE_INDEX 0
+#define SELECTED_DEVICE_INDEX 1
 
 #define MAX_SOURCE_SIZE (0x100000)
 
@@ -191,63 +191,73 @@ int main(int argc, char * argv[]) {
     err |= clEnqueueWriteBuffer(queue, d_b, CL_TRUE, 0,
         bytes, h_b, 0, NULL, NULL);
 
-    printf(">>> Starting calculation\n");
+	// Compare different work group sizes
+	int wg_size = LOCAL_SIZE*2;
+	while( wg_size != 1 ) {
+		wg_size /= 2;
+		size_t wg[2] = {
+			wg_size,
+			wg_size
+		};
+		printf(">>> Work group size: %d\n", wg_size);
+		printf(">>> Starting calculation\n");
 	
-    // Start the timing
-    gettimeofday( & Tvalue, & dummy);
-    double starttime = (double) Tvalue.tv_sec + 1.0e-6 * ((double) Tvalue.tv_usec);
+		// Start the timing
+		gettimeofday( & Tvalue, & dummy);
+		double starttime = (double) Tvalue.tv_sec + 1.0e-6 * ((double) Tvalue.tv_usec);
 
-    // Set the arguments to our compute kernel
-    err = clSetKernelArg(kernel, 0, sizeof(cl_mem), & d_a);
-    err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), & d_b);
-    err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), & d_c);
-    err |= clSetKernelArg(kernel, 3, sizeof(unsigned int), & n);
-    unsigned int iter = ITERATION;
-    err |= clSetKernelArg(kernel, 4, sizeof(unsigned int), & iter);
+		// Set the arguments to our compute kernel
+		err = clSetKernelArg(kernel, 0, sizeof(cl_mem), & d_a);
+		err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), & d_b);
+		err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), & d_c);
+		err |= clSetKernelArg(kernel, 3, sizeof(unsigned int), & n);
+		unsigned int iter = ITERATION;
+		err |= clSetKernelArg(kernel, 4, sizeof(unsigned int), & iter);
 
-    // Execute the kernel over the entire range of the data set  
+		// Execute the kernel over the entire range of the data set  
 
-    err = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, global_size, local_size,
-        0, NULL, NULL);
+		err = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, global_size, wg,
+			0, NULL, NULL);
 
-    if (err != CL_SUCCESS) {
-        printf("Error at clEnqueueNDRangeKernel(), error code: %d\n", err);
-        return 1;
-    }
+		if (err != CL_SUCCESS) {
+			printf("Error at clEnqueueNDRangeKernel(), error code: %d\n", err);
+			return 1;
+		}
 
-    // Wait for the command queue to get serviced before reading back results
-    clFinish(queue);
+		// Wait for the command queue to get serviced before reading back results
+		clFinish(queue);
 
-    // Read the results from the device
-    clEnqueueReadBuffer(queue, d_c, CL_TRUE, 0,
-        bytes, h_c, 0, NULL, NULL);
+		// Read the results from the device
+		clEnqueueReadBuffer(queue, d_c, CL_TRUE, 0,
+			bytes, h_c, 0, NULL, NULL);
 
-    // End the timed loop
-    gettimeofday( & Tvalue, & dummy);
+		// End the timed loop
+		gettimeofday( & Tvalue, & dummy);
 
-    if (MATRIX_OUTPUT == 1) {
-        // Print result
-        for (i = 0; i < n; i++) {
-            for (j = 0; j < n; j++) {
-                printf("%.2f ", h_c[i * n + j]);
-            }
-            printf("\n");
-        }
-    }
+		if (MATRIX_OUTPUT == 1) {
+			// Print result
+			for (i = 0; i < n; i++) {
+				for (j = 0; j < n; j++) {
+					printf("%.2f ", h_c[i * n + j]);
+				}
+				printf("\n");
+			}
+		}
 
-    if (DEBUG_RESULT_OUTPUT) {
-        printf("\nDebug C[%d;%d]:\n", DEBUG_I, DEBUG_J);
-        i = DEBUG_I;
-        j = DEBUG_J;
-        printf("%.2f ", h_c[i * n + j]);
+		if (DEBUG_RESULT_OUTPUT) {
+			printf("\nDebug C[%d;%d]:\n", DEBUG_I, DEBUG_J);
+			i = DEBUG_I;
+			j = DEBUG_J;
+			printf("%.2f ", h_c[i * n + j]);
 
-        printf("\n\n");
-    }
+			printf("\n\n");
+		}
 
-    double endtime = (double) Tvalue.tv_sec + 1.0e-6 * ((double) Tvalue.tv_usec);
-    double runtime = (endtime - starttime);
-    printf(">>> Done: took %.5lf seconds runtime\n", runtime);
-
+		double endtime = (double) Tvalue.tv_sec + 1.0e-6 * ((double) Tvalue.tv_usec);
+		double runtime = (endtime - starttime);
+		printf(">>> Done: took %.5lf seconds runtime\n", runtime);
+	}
+	
 	if(COMPARE_TO_SEQUENTIAL){
 		
 		size_t seq_local_size[2] = {1,1};
